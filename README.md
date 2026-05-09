@@ -382,15 +382,15 @@ scheduler.add_job(
 
 | Component        | Responsibility |
 |------------------|----------------|
-| `communication/` | Handles WhatsApp and Gmail integrations |
-| `llm/`           | LLM provider integrations and response generation |
-| `memory/`        | Stores and retrieves conversation history |
-| `rag/`           | Retrieval-Augmented Generation pipeline and semantic search |
-| `reply/`         | Intent detection, chat responses, search, and summarization |
-| `services/`      | Background jobs, scheduling, and utility services |
-| `db/`            | Database connection and vector storage |
-| `tokens/`        | OAuth credentials and authentication tokens |
-| `main.py`        | FastAPI entry point and webhook handling |
+| [`communication/`](./app/communication/)| Handles WhatsApp and Gmail integrations |
+| [`llm/`](./app/llm/)           | LLM provider integrations and response generation |
+| [`memory/`](./app/memory/)        | Stores and retrieves conversation history |
+| [`rag/`](./app/rag/)           | Retrieval-Augmented Generation pipeline and semantic search |
+| [`reply/`](./app/reply/)         | Intent detection, chat responses, search, and summarization |
+| [`services/`](./app/services/)      | Background jobs, scheduling, and utility services |
+| [`db/`       ](./app/db/)     | Database connection and vector storage |
+| [`tokens/`    ](./app/tokens/)    | OAuth credentials and authentication tokens |
+| [`main.py`    ](./app/main.py)    | FastAPI entry point and webhook handling |
 ---
 ## Performance Notes
 
