@@ -121,7 +121,13 @@ def process_message(user_id: str, user_msg: str, history: list, platform="whatsa
 
 
 def should_use_rag(msg: str) -> bool:
-    keywords = ["what", "how", "explain", "tell", "info", "details", "who"]
+    keywords = [
+        "who is",
+        "tell me about",
+        "what do you know about",
+        "details about",
+        "information about",
+    ]
     return any(k in msg.lower() for k in keywords)
 
 

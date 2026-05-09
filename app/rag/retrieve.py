@@ -13,16 +13,25 @@ def retrieve(query, user_id, k=3):
     cur = conn.cursor()
 
     cur.execute(
-        """SELECT content, embedding <-> %s::vector AS distance
+        """
+        SELECT content, embedding <-> %s::vector AS distance
         FROM documents
-        WHERE user_id = %s AND source = 'knowledge'
+        WHERE user_id = %s
+        AND source = 'knowledge'
         ORDER BY embedding <-> %s::vector
-        LIMIT 8;
+        LIMIT %s;
         """,
-        (user_id, emb_str, k),
+        (emb_str, user_id, emb_str, k),
     )
 
-    results = [row[0] for row in cur.fetchall()]
+    rows = cur.fetchall()
+
+    results = []
+
+    for content, distance in rows:
+        print("DISTANCE:", distance)
+        if distance < 1.0:
+            results.append(content)
 
     print("RAG CONTEXT:", results)
     print("QUERY USER_ID:", user_id)
