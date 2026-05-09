@@ -195,19 +195,20 @@ Reply sent back to Gmail
 ```
 
 ---
-# Setup Guide
+# Installation
 
 ## 1. Clone the Repository
 
 ```bash
-git clone <your-repository-url>
-cd Personalized-AI-Assistant
+git clone <your-repo-url>
+cd <project-folder>
 ```
+
 ---
 
 ## 2. Create Virtual Environment
 
-### macOS / Linux
+### macOS/Linux
 
 ```bash
 python3 -m venv .venv
@@ -220,6 +221,7 @@ source .venv/bin/activate
 python -m venv .venv
 .venv\Scripts\activate
 ```
+
 ---
 
 ## 3. Install Dependencies
@@ -227,148 +229,42 @@ python -m venv .venv
 ```bash
 pip install -r requirements.txt
 ```
+
 ---
 
 # Environment Variables
 
-Create a `.env` file in the root directory.
+Create a `.env` file:
 
 ```env
-# LLM APIs
-GEMINI_API_KEY=your_gemini_api_key
-MISTRAL_API_KEY=your_mistral_api_key
+# LLM
+LLM_MODEL=qwen
+OPENAI_API_KEY=your_key_if_needed
 
 # WhatsApp Cloud API
 WHATSAPP_ACCESS_TOKEN=your_access_token
 WHATSAPP_PHONE_NUMBER_ID=your_phone_number_id
 WHATSAPP_VERIFY_TOKEN=your_verify_token
 
-# PostgreSQL
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-POSTGRES_DB=your_database
-POSTGRES_USER=your_username
-POSTGRES_PASSWORD=your_password
+# Gmail
+GMAIL_CLIENT_ID=your_client_id
+GMAIL_CLIENT_SECRET=your_client_secret
+GMAIL_REFRESH_TOKEN=your_refresh_token
 
 # ngrok
 NGROK_URL=your_ngrok_url
 ```
----
-
-# Gmail API Setup
-
-## 1. Create Google Cloud Project
-
-- Open Google Cloud Console
-- Create a new project
 
 ---
 
-## 2. Enable Gmail API
-
-- Go to APIs & Services
-- Enable Gmail API
-
----
-
-## 3. Configure OAuth Consent Screen
-
-- Configure app details
-- Add test users if needed
-
----
-
-## 4. Create OAuth Credentials
-
-- Create OAuth Client ID
-- Download credentials JSON file
-
-Place the file inside:
-
-```bash
-app/tokens/
-```
-
-Example:
-
-```bash
-app/tokens/Oauth_cred_chatbot_gmail.json
-```
----
-
-## 5. Generate Gmail Token
-
-Run your Gmail authentication script to generate:
-
-```bash
-token.json
-```
-
-This file should also be stored in:
-
-```bash
-app/tokens/
-```
----
-
-# WhatsApp Cloud API Setup
-
-## 1. Create Meta Developer App
-
-- Open Meta Developer Dashboard
-- Create a new app
-- Add WhatsApp product
-
----
-
-## 2. Configure Webhook
-
-Set webhook URL:
-
-```text
-https://your-ngrok-url/webhook/whatsapp
-```
-
-Verify using your:
-
-```env
-WHATSAPP_VERIFY_TOKEN
-```
----
-
-## 3. Add Access Token
-
-Copy:
-- Permanent Access Token
-- Phone Number ID
-
-Add them to `.env`
-
----
-
-# PostgreSQL Setup
-
-## Create Database
-
-```sql
-CREATE DATABASE personalized_ai_assistant;
-```
----
-
-## Enable pgvector Extension
-
-```sql
-CREATE EXTENSION vector;
-```
----
-
-# Run the Project
+# Running the Project
 
 ## Start FastAPI Server
 
 ```bash
 uvicorn app.main:app --reload
 ```
+
 ---
 
 ## Start ngrok
@@ -376,25 +272,97 @@ uvicorn app.main:app --reload
 ```bash
 ngrok http 8000
 ```
+
+Copy the generated public URL and configure it in:
+
+- Meta WhatsApp webhook settings
+- Gmail callback configuration (if required)
+
 ---
 
-# RAG Setup
+# Gmail Setup
 
-## 1. Ingest Documents
+1. Create a project in Google Cloud Console
+2. Enable Gmail API
+3. Create OAuth credentials
+4. Generate refresh token
+5. Add credentials to `.env`
 
-Run your ingestion pipeline:
+---
 
-```bash
-python -m app.rag.pipeline
+# Meta WhatsApp Cloud API Setup
+
+1. Create a Meta Developer account
+2. Create a WhatsApp Cloud API application
+3. Configure webhook URL
+
+Point webhook to:
+
+```text
+https://your-ngrok-url/webhook/whatsapp
 ```
+
 ---
 
-## 2. Generate Embeddings
+# Memory System
 
-Embeddings are generated using:
+The project supports conversation memory to maintain context across messages.
 
-- Mistral Embeddings API
-- Vector storage using PostgreSQL + pgvector
+Example:
+
+```python
+user_memory[user_id] = [
+    "Hello",
+    "Hi, how can I help you?",
+    "Tell me about vector embeddings"
+]
+```
+
+You can limit stored history:
+
+```python
+MAX_HISTORY = 5
+```
+
+---
+
+# Switching LLM Models
+
+The project is designed so you can easily swap models without changing business logic.
+
+Example:
+
+```python
+MODEL_NAME = "qwen"
+```
+
+Switch to another provider/model:
+
+```python
+MODEL_NAME = "mistral"
+```
+
+---
+
+# Scheduler Example
+
+```python
+from apscheduler.schedulers.background import BackgroundScheduler
+
+scheduler = BackgroundScheduler(timezone="Asia/Kolkata")
+scheduler.start()
+```
+
+Example scheduled task:
+
+```python
+scheduler.add_job(
+    send_daily_updates,
+    trigger='cron',
+    hour=9,
+    minute=0
+)
+```
 
 ---
 
@@ -424,26 +392,18 @@ Embeddings are generated using:
 | `tokens/`        | OAuth credentials and authentication tokens |
 | `main.py`        | FastAPI entry point and webhook handling |
 ---
-
 ## Performance Notes
 
-- Uses asynchronous FastAPI endpoints for efficient request handling
-- Supports scalable webhook-based communication architecture
 - Response latency depends on external LLM API response times
-- RAG pipeline improves response relevance through semantic retrieval
 - RAG retrieval adds minimal overhead before response generation
-- PostgreSQL + pgvector enables efficient vector similarity search
 - Embedding generation time varies based on document size
 - Larger conversation history increases prompt processing latency
-- Conversation memory reduces repeated context generation
-- Embedding-based retrieval minimizes unnecessary LLM context usage
-- Modular architecture allows easy scaling and provider switching
-- APScheduler handles background jobs independently from request flow
+- PostgreSQL + pgvector enables efficient semantic retrieval
 - ngrok may introduce slight webhook latency during local development
-- Designed for low-latency conversational workflows across WhatsApp and Gmail
+- Background jobs run independently using APScheduler
+- FastAPI async architecture supports concurrent request handling
 
 ---
-
 # Tech Stack
 
 | Category | Technologies |
@@ -467,40 +427,4 @@ Embeddings are generated using:
 - Voice interaction support
 - Telegram integration
 - Discord integration
-- Distributed vector storage
-- Autonomous AI workflows
-- Multi-agent orchestration
-- Real-time streaming responses
-- File-aware contextual retrieval
-- Advanced personalization layer
-
 ---
-
-# Example Use Cases
-
-- Personal AI assistant
-- Automated customer support
-- AI email responder
-- AI WhatsApp bot
-- Internal productivity assistant
-- AI scheduling assistant
-- Knowledge retrieval assistant
-- AI-powered workflow automation
-- Intelligent document assistant
-
----
-
-# Author
-
-## Prakhar Pandey
-
-Creator of **Personalized AI Assistant**
-
-Computer Science graduate focused on:
-
-- Backend Engineering
-- AI Integrations
-- Retrieval-Augmented Generation (RAG)
-- Distributed Systems
-- Automation Tools
-- Scalable AI Systems
