@@ -1,4 +1,4 @@
-from app.llm.provider import generate_reply
+from app.llm.model import generate_reply
 from ..services.prompt import SUMMARIZATION_PROMPT
 
 

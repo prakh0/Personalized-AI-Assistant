@@ -1,57 +1,61 @@
 import os
 import re
 from .search import find_file
-from ..llm.provider import generate_reply
+from .detect_intension import detect_intent
+from ..llm.model import generate_reply
 from .summary import summarize_email
 from ..services.prompt import WHATSAPP_ASSISTANT_PROMPT, GMAIL_ASSISTANT_PROMPT
 from ..services.stocks import get_market_summary
 from app.rag.vector_store import store_document
 from ..rag.pipeline import build_prompt
+from ..web_search.web_search_format import build_web_prompt
 
 
 def process_message(user_id: str, user_msg: str, history: list, platform="whatsapp"):
 
-    lower_msg = user_msg.lower()
+    intent_data = detect_intent(user_msg)
+    intent = intent_data["intent"]
 
-    if "market report" in lower_msg and "everyday" in lower_msg:
+    if intent == "schedule_market_report":
+
         from app.services.scheduler import schedule_daily_report
 
         schedule_daily_report(user_id)
-        return {"type": "text", "message": "Scheduled daily market report at 5 PM"}
 
-    if "market summary" in lower_msg:
+        return {
+            "type": "text",
+            "message": "Scheduled daily market report at 5 PM",
+        }
+
+    if intent == "market_summary":
+
         print("MARKET SUMMARY REQUEST DETECTED")
-        report = get_market_summary()
-        return {"type": "text", "message": report}
 
-    if "summarize email" in lower_msg:
+        report = get_market_summary()
+
+        return {
+            "type": "text",
+            "message": report,
+        }
+
+    if intent == "summarize_email":
+
         print("EMAIL SUMMARY REQUEST DETECTED")
+
         summary = summarize_email()
-        return {"type": "text", "message": summary}
+
+        return {
+            "type": "text",
+            "message": summary,
+        }
+
     email_match = re.search(r"[\w\.-]+@[\w\.-]+", user_msg)
 
-    file_keywords = [
-        "send",
-        ".pdf",
-        ".jpg",
-        ".jpeg",
-        ".png",
-        ".txt",
-        ".docx",
-        ".csv",
-        ".pptx",
-    ]
+    intent_data = detect_intent(user_msg)
 
-    words = lower_msg.split()
-    is_file_request = any(
-        keyword in words or keyword in lower_msg for keyword in file_keywords
-    )
+    if intent_data["intent"] == "file":
 
-    if is_file_request:
-        cleaned = lower_msg.replace("send me", "").replace("send", "").strip()
-        if email_match:
-            cleaned = re.sub(r"[\w\.-]+@[\w\.-]+", "", cleaned)
-            cleaned = cleaned.replace("to", "").strip()
+        cleaned = intent_data["file_name"]
 
         print("FILE REQUEST DETECTED")
 
@@ -79,7 +83,10 @@ def process_message(user_id: str, user_msg: str, history: list, platform="whatsa
 
         print("File not found")
 
-        return {"type": "text", "message": "Couldn't find that file"}
+        return {
+            "type": "text",
+            "message": "Couldn't find that file",
+        }
 
     print("CHAT REQUEST")
 
@@ -89,20 +96,40 @@ def process_message(user_id: str, user_msg: str, history: list, platform="whatsa
     else:
         prompt = GMAIL_ASSISTANT_PROMPT
 
-    if platform == "whatsapp":
+    if platform == "whatsapp" and intent == "store_knowledge":
         try:
-            if is_knowledge(user_msg):
-                print("STORING KNOWLEDGE")
-
-                store_document(
-                    content=user_msg,
-                    user_id=user_id,
-                    source="knowledge",
-                )
+            print("STORING KNOWLEDGE")
+            store_document(
+                content=user_msg,
+                user_id=user_id,
+                source="knowledge",
+            )
         except Exception as e:
             print("Error storing document:", e)
 
-    if platform == "whatsapp" and should_use_rag(user_msg):
+    if platform == "whatsapp" and intent == "web_search":
+
+        print("WEB SEARCH INTENT DETECTED")
+
+        final_prompt = build_web_prompt(user_msg)
+
+        if not final_prompt:
+            return {
+                "type": "text",
+                "message": "Couldn't find any relevant information on the web.",
+            }
+        reply = generate_reply(final_prompt, "", history)
+        if not reply:
+            return {
+                "type": "text",
+                "message": "Web search failed to generate a reply.",
+            }
+        return {
+            "type": "text",
+            "message": reply,
+        }
+
+    if platform == "whatsapp" and intent == "rag":
         print("RAG TRIGGERED")
 
         final_prompt = build_prompt(query=user_msg, memory=history, user_id=user_id)
@@ -118,26 +145,3 @@ def process_message(user_id: str, user_msg: str, history: list, platform="whatsa
         return {"type": "text", "message": None}
 
     return {"type": "text", "message": reply}
-
-
-def should_use_rag(msg: str) -> bool:
-    keywords = [
-        "who is",
-        "tell me about",
-        "what do you know about",
-        "details about",
-        "information about",
-    ]
-    return any(k in msg.lower() for k in keywords)
-
-
-def is_knowledge(msg: str) -> bool:
-    msg = msg.lower().strip()
-
-    if msg.endswith("?"):
-        return False
-
-    if len(msg.split()) < 5:
-        return False
-
-    return True

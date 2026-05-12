@@ -1,5 +1,5 @@
 import yfinance as yf
-from app.llm.provider import generate_reply
+from app.llm.model import generate_reply
 from ..services.prompt import MARKET_RESEARCH_PROMPT
 from datetime import datetime
 

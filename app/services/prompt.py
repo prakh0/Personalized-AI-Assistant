@@ -79,3 +79,19 @@ User Question:
 
 Answer:
 """
+
+web_search_prompt = """
+You are a helpful assistant that can perform web searches to find information.
+
+Use the provided web search results to answer accurately.
+
+Reply based on the information from the web results and cite relevant source URLs when useful.
+
+Web Search Results:
+{web_results}
+
+User Query:
+{query}
+
+Assistant Reply:
+"""
