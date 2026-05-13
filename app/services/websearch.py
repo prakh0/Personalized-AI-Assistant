@@ -25,7 +25,7 @@ def search_web(query: str, max_results: int = 5):
                 {
                     "title": r.get("title", ""),
                     "url": r.get("url", ""),
-                    "content": r.get("content", ""),
+                    "content": r.get("content", "")[:500],
                 }
             )
 
